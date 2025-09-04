@@ -1,13 +1,31 @@
-module starter::practica_sui {
+module 0xf4d0dd5f0411::alanbk {
     use std::debug::print;
-    use std::string::utf8;
+    use std::string::{String, utf8};
 
-    fun practica() {
-        print(&utf8(b"Hello, World!"));
+    public struct Usuario has drop, store {
+        nombre: String,
+        edad: u8,
+        vivo: bool,
+    }
+ 
+    fun practica(usuario: Usuario) {
+        if (usuario.edad > 18) {
+            print(&utf8(b"Acceso permitido"));
+        } else if (usuario.edad == 18) {
+            print(&utf8(b"Bien lo lograste!"));
+        } else {
+            print(&utf8(b"Acceso No permitido"));
+        }
     }
 
     #[test]
     fun prueba() {
-        practica();
+        let usuario = Usuario {
+            nombre: utf8(b"Aldo Perez"),
+            edad: 28,
+            vivo: true, 
+        };
+
+        practica(usuario);
     }
 }

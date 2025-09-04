@@ -4,6 +4,6 @@ version = "0.0.0"
 edition = "2024.beta"
 
 [addresses]
-starter = "0x0"
+starter = "0xf4d0dd5f041143e9aee81e13723575fac10fc4ee21400cc37d33274032b20c73"
 
 [dependencies]
