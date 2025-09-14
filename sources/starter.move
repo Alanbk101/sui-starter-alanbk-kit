@@ -1,51 +1,70 @@
-module starter::practica_sui;
+module caja_fuerte::digital {
+    use sui::object;
+    use sui::transfer;
+    use sui::tx_context;
+    use sui::vec_map::{Self, VecMap};
+    use std::string::String;
+    use std::vector;
 
-use std::string::{String, utf8};
+    const ID_YA_EXISTE: u64 = 1;
+    const ID_NO_EXISTE: u64 = 2;
 
-public struct Veterinaria has key {
-    id: UID,
-    nombre: String,
-    mascotas: vector<Mascota>,
-}
+    // Objeto principal con key y store para poder almacenar globalmente
+    public struct CajaFuerteDigital has key, store {
+        id: UID,
+        clientes: VecMap<u64, Cliente>,
+    }
 
-public struct Mascota has store, drop {
-    nombre: String,
-    edad: u16,
-    especie: String,
-    foto: String,
-    estado: String,
-}
+    // Cliente con nombre del dueño y vector de cajas fuertes
+    public struct Cliente has copy, drop, store {
+        nombre_dueno: String,
+        cajas_fuertes: vector<CajaFuerte>,
+    }
 
-#[error] 
-const ID_NO_EXISTE: vector<u8> = b"El ID proporcionado no existe.";
+    // Enum para estado de la caja fuerte
+    public enum CajaFuerte {
+        Disponible(Disponible),
+        NoDisponible(NoDisponible),
+    }
 
-public fun crear_veterinaria(nombre: String, ctx: &mut TxContext) {
-    let veterinaria = Veterinaria { id: object::new(ctx), nombre, mascotas: vector[] };
-    transfer::transfer(veterinaria, tx_context::sender(ctx));
-}
+    // Estructura para cajas disponibles
+    public struct Disponible has copy, drop, store {
+        nombre: String,
+        activo: bool,
+        valor: u64,
+    }
 
-public fun agregar_mascota(
-    veterinaria: &mut Veterinaria, 
-    nombre: String, 
-    edad: u16, 
-    especie: String, 
-    foto: String) {
-    
-    let mascota = Mascota { nombre, edad, especie, foto, estado: utf8(b"Recién Admitido") };
-    veterinaria.mascotas.push_back(mascota);
-}
+    // Estructura para cajas no disponibles
+    public struct NoDisponible has copy, drop, store {
+        nombre: String,
+        activo: bool,
+        valor: u64,
+    }
 
-public fun eliminar_ultima_mascota(veterinaria: &mut Veterinaria) {
-    veterinaria.mascotas.pop_back();
-}
+    // Crear el objeto principal con clientes vacío
+    public fun crear_caja_digital(ctx: &mut TxContext) {
+        let clientes = vec_map::empty<u64, Cliente>();
+        let caja_digital = CajaFuerteDigital {
+            id: object::new(ctx),
+            clientes,
+        };
+        transfer::transfer(caja_digital, tx_context::sender(ctx));
+    }
 
-public fun eliminar_mascota(veterinaria: &mut Veterinaria, id: u64) {
-    assert!(!(veterinaria.mascotas.length() > id), ID_NO_EXISTE);
-    veterinaria.mascotas.remove(id);
-}
+    // Agregar un cliente nuevo; valida que no exista previamente
+    public fun agregar_cliente(caja: &mut CajaFuerteDigital, id_dueno: u64, nombre: String) {
+        assert!(!caja.clientes.contains(&id_dueno), ID_YA_EXISTE);
+        let cliente = Cliente {
+            nombre_dueno: nombre,
+            cajas_fuertes: vector::empty(),
+        };
+        caja.clientes.insert(id_dueno, cliente);
+    }
 
-public fun editar_estado(veterinaria: &mut Veterinaria, id: u64, estado: String) {
-    assert!(!(veterinaria.mascotas.length() > id), ID_NO_EXISTE);
-    let mascota = veterinaria.mascotas.borrow_mut(id);
-    mascota.estado = estado;
+    // Agregar una caja fuerte a un cliente existente
+    public fun agregar_caja(caja: &mut CajaFuerteDigital, id_dueno: u64, nueva_caja: CajaFuerte) {
+        assert!(caja.clientes.contains(&id_dueno), ID_NO_EXISTE);
+        let cliente = caja.clientes.get_mut(&id_dueno);
+        vector::push_back(&mut cliente.cajas_fuertes, nueva_caja);
+    }
 }
